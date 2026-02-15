@@ -127,8 +127,21 @@ def add_cert():
 @app.route('/api/certificates')
 @login_required
 def get_certs():
-    certs = Certificate.query.filter_by(user_id=current_user.id).all()
-    return jsonify([{"id": c.asset_id, "type": c.equipment, "site": c.site, "expiry": c.expiry_date, "status": c.status} for c in certs])
+    # We query the database for certificates ONLY where user_id matches the logged-in user
+    user_certs = Certificate.query.filter_by(user_id=current_user.id).all()
+
+    # We convert the SQLite objects into a list of dictionaries for JavaScript
+    output = []
+    for c in user_certs:
+        output.append({
+            "id": c.asset_id,
+            "type": c.equipment,
+            "site": c.site,
+            "expiry": c.expiry_date,
+            "status": c.status,
+            "pdf": c.pdf_path # We include the PDF filename so the user can open it
+        })
+    return jsonify(output)
 
 
 @app.route('/api/delete_certificate/<asset_id>', methods=['DELETE'])

@@ -46,7 +46,7 @@ function showSection(id) {
   }
 
   // Trigger data loading based on section ID
-  if (id === "dashboard") loadDashboard();
+  if (id === "dashboard") loadDashboard(); loadInventory();
   if (id === "certificates") loadCertificates();
   if (id === "renewals") loadRenewals();
   if (id === "profile") showOnePageProfile(); // This loads charts
@@ -399,17 +399,43 @@ async function uploadCertificate(e) {
 }
 
 async function loadInventory() {
-    const res = await fetch("/api/certificates");
-    const certs = await res.json();
-    const grid = document.getElementById("cert-display-grid");
-    grid.innerHTML = certs.map(c => `
-        <div class="card">
-            <h3>${c.type}</h3>
-            <p>ID: ${c.id}</p>
-            <p>Site: ${c.site}</p>
-            <img src="/generate_qr/${c.id}" width="80">
-        </div>
-    `).join("");
+  try {
+      const res = await fetch("/api/certificates");
+      const certs = await res.json();
+      const grid = document.getElementById("cert-display-grid");
+      
+      if (certs.length === 0) {
+          grid.innerHTML = "<p class='text-muted'>No certificates found. Add your first inspection!</p>";
+          return;
+      }
+
+      grid.innerHTML = certs.map(c => `
+          <div class="card" style="padding: 15px; border-top: 4px solid #28a745;">
+              <div style="display:flex; justify-content: space-between;">
+                  <small class="text-muted">ID: ${c.id}</small>
+                  <span class="badge ${c.status === 'Valid' ? 'bg-success' : 'bg-danger'}" style="font-size: 0.7rem;">${c.status}</span>
+              </div>
+              <h3 style="margin: 10px 0;">${c.type}</h3>
+              <p class="small">Site: ${c.site || 'N/A'}</p>
+              
+              <div style="text-align:center; margin: 15px 0;">
+                  <img src="/generate_qr/${c.id}" width="100" style="border: 1px solid #eee; padding: 5px;">
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                  <!-- View PDF Button: only works if a PDF was uploaded -->
+                  <a href="/static/pdfs/${c.pdf}" target="_blank" class="btn-small" style="text-align:center; text-decoration:none; background: #007bff; color:white; ${!c.pdf ? 'pointer-events: none; opacity: 0.5;' : ''}">
+                      View PDF
+                  </a>
+                  <button onclick="deleteCertificate('${c.id}')" class="btn-small" style="background: #dc3545; color:white; border:none;">
+                      Delete
+                  </button>
+              </div>
+          </div>
+      `).join("");
+  } catch (err) {
+      console.error("Failed to load inventory:", err);
+  }
 }
 
 /* =====================================================

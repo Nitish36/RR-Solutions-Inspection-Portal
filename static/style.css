@@ -1,0 +1,283 @@
+/* ================= ROOT THEME ================= */
+:root {
+  --primary: #1f1f1f;         /* RR dark */
+  --secondary: #f4b400;       /* RR yellow */
+  --accent: #facc15;
+  --success: #16a34a;
+  --warning: #f59e0b;
+  --danger: #dc2626;
+
+  --bg: #f9fafb;
+  --card-bg: #ffffff;
+
+  --text-dark: #111827;
+  --text-light: #6b7280;
+  --border: #e5e7eb;
+
+  --radius: 14px;
+  --shadow: 0 10px 25px rgba(0,0,0,0.08);
+}
+
+/* ================= RESET ================= */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text-dark);
+  min-height: 100vh;
+}
+
+/* ================= LOGIN PAGE ================= */
+.login-wrapper {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #111, #333);
+}
+
+.login-card {
+  background: white;
+  padding: 40px;
+  width: 100%;
+  max-width: 380px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.login-logo {
+  width: 80px;
+  margin-bottom: 15px;
+}
+
+.login-card h2 {
+  margin-bottom: 5px;
+}
+
+.login-footer {
+  margin-top: 20px;
+  font-size: 0.75rem;
+  color: var(--text-light);
+}
+
+/* ================= HEADER ================= */
+header {
+  background: var(--primary);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: var(--shadow);
+}
+
+.header-container {
+  max-width: 1200px;
+  margin: auto;
+  padding: 14px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand img {
+  width: 42px;
+}
+
+header h1 {
+  font-size: 1.3rem;
+  color: var(--secondary);
+}
+
+header h1 span {
+  color: white;
+  font-weight: 400;
+}
+
+/* ================= NAV ================= */
+nav {
+  display: flex;
+  gap: 22px;
+}
+
+nav a {
+  color: #f3f4f6;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: 0.2s;
+}
+
+nav a:hover {
+  color: var(--secondary);
+}
+
+/* ================= MOBILE MENU ================= */
+.menu-toggle {
+  display: none;
+  flex-direction: column;
+  cursor: pointer;
+  gap: 5px;
+}
+
+.menu-toggle span {
+  width: 25px;
+  height: 3px;
+  background: white;
+  border-radius: 3px;
+  transition: 0.3s;
+}
+
+.menu-toggle.active span:nth-child(1) {
+  transform: translateY(8px) rotate(45deg);
+}
+.menu-toggle.active span:nth-child(2) {
+  opacity: 0;
+}
+.menu-toggle.active span:nth-child(3) {
+  transform: translateY(-8px) rotate(-45deg);
+}
+
+/* ================= MAIN ================= */
+.container {
+  max-width: 1200px;
+  margin: 30px auto;
+  padding: 0 20px;
+}
+
+.hidden {
+  display: none;
+}
+
+/* ================= CARDS ================= */
+.card {
+  background: var(--card-bg);
+  padding: 22px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border-top: 5px solid var(--secondary);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+/* ================= STATS ================= */
+.stat-card {
+  background: white;
+  padding: 22px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border-left: 6px solid var(--secondary);
+}
+
+.stat-card.warning { border-left-color: var(--warning); }
+.stat-card.danger { border-left-color: var(--danger); }
+
+.stat-card span {
+  font-size: 0.85rem;
+  color: var(--text-light);
+}
+
+.stat-card .value {
+  font-size: 2.2rem;
+  font-weight: 800;
+  margin: 8px 0;
+}
+
+/* ================= FORMS ================= */
+input, textarea, select {
+  width: 100%;
+  padding: 12px 14px;
+  margin-bottom: 15px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  font-size: 0.95rem;
+}
+
+input:focus {
+  outline: 2px solid var(--secondary);
+}
+
+/* ================= BUTTONS ================= */
+button {
+  background: var(--secondary);
+  color: var(--primary);
+  padding: 12px 18px;
+  border-radius: 10px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  background: #eab308;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 2px solid var(--secondary);
+  color: var(--secondary);
+}
+
+.btn-outline:hover {
+  background: var(--secondary);
+  color: var(--primary);
+}
+
+.btn-block {
+  width: 100%;
+}
+
+/* ================= FOOTER ================= */
+footer {
+  text-align: center;
+  padding: 25px;
+  font-size: 0.85rem;
+  color: var(--text-light);
+}
+
+/* ================= MOBILE ================= */
+@media (max-width: 768px) {
+  nav {
+    display: none;
+    position: absolute;
+    top: 64px;
+    left: 0;
+    width: 100%;
+    background: var(--primary);
+    flex-direction: column;
+    padding: 15px 0;
+  }
+
+  nav.active {
+    display: flex;
+  }
+
+  nav a {
+    padding: 12px;
+    font-size: 1.1rem;
+  }
+
+  .menu-toggle {
+    display: flex;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

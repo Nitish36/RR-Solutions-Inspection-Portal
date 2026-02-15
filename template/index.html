@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RR Solutions | Safety Inspection Portal</title>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<!-- ================= LOGIN / REGISTER PAGE ================= -->
+<section id="login-page" class="login-wrapper">
+  <div class="login-card">
+    <img src="{{ url_for('static', filename='images/rr_logo.jpeg') }}" class="login-logo" alt="RR Solutions">
+    <h2 id="auth-title">Login</h2>
+    <input type="text" id="username" placeholder="User ID">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="handleAuth()" id="auth-btn">Login</button>
+    <p><a href="javascript:void(0)" onclick="toggleAuth()" id="toggle-link">New user? Register</a></p>
+  </div>
+</section>
+
+<!-- ================= MAIN APP ================= -->
+<div id="app" class="hidden">
+
+<header>
+  <div class="header-container">
+    <div class="brand">
+      <img src="{{ url_for('static', filename='images/rr_logo.jpeg') }}" alt="RR Solutions">
+      <h1>RR <span>Solutions</span></h1>
+    </div>
+
+    <nav id="nav-menu">
+      <a onclick="showSection('dashboard')">Dashboard</a>
+      <a onclick="showSection('add-certificate')" style="color: #28a745; font-weight: bold;">+ Add Inspection</a>
+      <a onclick="showSection('barcode-scan')">Scanner</a>
+      <a onclick="showSection('certificates')">Inventory</a>
+      <a onclick="showSection('renewals')">Renewals</a>
+      <a onclick="showSection('profile')">Profile</a>
+      <a onclick="logout()" class="logout">Logout</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+
+<!-- DASHBOARD -->
+<section id="dashboard">
+  <h2>Dashboard Overview</h2>
+  <div class="grid">
+    <div class="stat-card"><span>Total Assets</span><p class="value" id="stat-total">0</p></div>
+    <div class="stat-card"><span>Valid</span><p class="value" id="stat-valid">0</p></div>
+    <div class="stat-card warning"><span>Expiring Soon</span><p class="value" id="stat-soon">0</p></div>
+    <div class="stat-card danger"><span>Expired</span><p class="value" id="stat-expired">0</p></div>
+  </div>
+
+  <h2 style="margin-top:30px;">Quick Actions</h2>
+  <div class="grid">
+    <div class="stat-card" onclick="showSection('add-certificate')" style="cursor:pointer; border: 2px dashed #28a745;">
+      <h1 style="color: #28a745;">➕</h1>
+      <p><strong>New Inspection</strong></p>
+    </div>
+    <div class="stat-card" onclick="showSection('barcode-scan')" style="cursor:pointer;">
+      <h1>📷</h1>
+      <p><strong>Open Scanner</strong></p>
+    </div>
+  </div>
+</section>
+
+<!-- ADD INSPECTION (Upgraded with File Upload) -->
+<section id="add-certificate" class="hidden">
+  <div class="card" style="max-width: 600px; margin: auto;">
+      <h2>Log New Inspection</h2>
+      <form id="add-cert-form" onsubmit="uploadCertificate(event)">
+          <div style="margin-bottom: 15px;">
+              <label>Asset ID:</label>
+              <input type="text" id="new-id" required style="width:100%; padding:8px;">
+          </div>
+          <div style="margin-bottom: 15px;">
+              <label>Form Type:</label>
+              <select id="new-form-type" style="width:100%; padding:8px;">
+                  <option value="Form 11">Form 11</option>
+                  <option value="Form 13">Form 13</option>
+                  <option value="Others">Others</option>
+              </select>
+          </div>
+          <div style="margin-bottom: 15px;">
+              <label>Equipment:</label>
+              <input type="text" id="new-equipment" required style="width:100%; padding:8px;">
+          </div>
+          <div style="margin-bottom: 15px;">
+              <label>Site:</label>
+              <input type="text" id="new-site" required style="width:100%; padding:8px;">
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+              <input type="date" id="new-date" required>
+              <input type="date" id="new-expiry" required>
+          </div>
+          
+          <!-- FILE UPLOAD FIELD -->
+          <div style="margin-bottom: 20px; border: 1px dashed #ccc; padding: 10px;">
+              <label>Attach Certificate (PDF):</label>
+              <input type="file" id="new-pdf" accept=".pdf" required>
+          </div>
+
+          <button type="submit" style="background: #28a745; color: white; width: 100%; padding: 12px; border: none; border-radius: 5px; cursor: pointer;">
+              Save & Upload
+          </button>
+      </form>
+  </div>
+</section>
+
+<!-- INVENTORY / CERTIFICATES (JS Driven) -->
+<section id="certificates" class="hidden">
+  <h2>Asset Inventory</h2>
+  <div style="margin-bottom: 20px; text-align: center;">
+      <button onclick="filterByForm('ALL')" class="btn-filter">ALL</button>
+      <button onclick="filterByForm('Form 11')" class="btn-filter">FORM 11</button>
+      <button onclick="filterByForm('Form 13')" class="btn-filter">FORM 13</button>
+  </div>
+  <div id="cert-display-grid" class="grid">
+      <!-- JavaScript will populate this -->
+  </div>
+</section>
+
+<!-- SCANNER -->
+<section id="barcode-scan" class="hidden">
+  <div class="card text-center">
+    <div id="reader" style="width:100%; max-width:400px; margin:auto;"></div>
+    <button onclick="startScanner()" class="mt-3">Start Camera</button>
+  </div>
+</section>
+
+<!-- PROFILE & ANALYTICS -->
+<section id="profile" class="hidden">
+  <div class="card">
+    <h2 id="profile-customer">Loading...</h2>
+    <p id="profile-site"></p>
+    <div class="grid">
+        <div class="stat-card"><h1>Rate</h1><p id="profile-rate">0%</p></div>
+        <div class="stat-card"><h1>Total</h1><p id="profile-total">0</p></div>
+    </div>
+    <div class="grid" style="margin-top:20px;">
+        <canvas id="statusChart"></canvas>
+        <canvas id="typeChart"></canvas>
+    </div>
+    <div id="type-breakdown" class="mt-3"></div>
+  </div>
+</section>
+
+<!-- RENEWALS -->
+<section id="renewals" class="hidden">
+  <h2>Upcoming Renewals</h2>
+  <div class="grid"></div>
+</section>
+
+</main>
+
+<!-- Notification Modal -->
+<div id="notification-modal" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; align-items: center; justify-content: center;">
+  <div style="background: white; width: 90%; max-width: 450px; border-radius: 10px; overflow: hidden;">
+      <div id="modal-header" style="padding: 15px; color: white; text-align: center; font-weight: bold;">⚠️ Alerts</div>
+      <div id="modal-body" style="padding: 20px;"></div>
+      <div style="padding: 10px; text-align: right;"><button onclick="closeModal()">Close</button></div>
+  </div>
+</div>
+
+<footer><p>© 2026 RR Solutions</p></footer>
+</div>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

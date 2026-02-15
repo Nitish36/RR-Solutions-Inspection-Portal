@@ -3,44 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3M Inspection Verification</title>
-    <!-- Bootstrap for quick styling -->
+    <title>RR Solutions | Verification</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background-color: #f4f4f4; }
-        .cert-card { max-width: 500px; margin: 50px auto; border-radius: 15px; overflow: hidden; }
-        .status-banner { padding: 20px; text-align: center; font-weight: bold; font-size: 1.5rem; }
+        body { background-color: #f4f4f4; font-family: 'Inter', sans-serif; }
+        .cert-card { max-width: 500px; margin: 30px auto; border-radius: 15px; overflow: hidden; border: none; }
+        .status-banner { padding: 20px; text-align: center; font-weight: bold; font-size: 1.5rem; border-bottom: 5px solid rgba(0,0,0,0.1); }
         .pass { background-color: #d4edda; color: #155724; }
         .fail { background-color: #f8d7da; color: #721c24; }
+        .staff-tools { background: #e7f1ff; border: 2px dashed #0d6efd; border-radius: 15px; padding: 20px; max-width: 500px; margin: 20px auto; }
     </style>
 </head>
 <body>
 
 <div class="container">
+    
+    <!-- 1. PRIVATE STAFF TOOLS (Only visible if logged in) -->
+    {% if current_user.is_authenticated %}
+    <div class="staff-tools text-center shadow-sm">
+        <h4 class="text-primary">Staff Tool: Update Document</h4>
+        <p class="text-muted small">Logged in as: <strong>{{ current_user.username }}</strong></p>
+        
+        <form id="field-upload-form" onsubmit="uploadFieldDoc(event, '{{ data.asset_id }}')">
+            <input type="file" id="field-pdf" accept=".pdf,image/*" required class="form-control mb-2">
+            <button type="submit" class="btn btn-primary w-100">Confirm & Upload PDF</button>
+        </form>
+    </div>
+    {% else %}
+    <div class="text-center mt-4">
+        <p class="text-muted small">Public Verification Mode. <a href="/">Login</a> to modify records.</p>
+    </div>
+    {% endif %}
+
+    <!-- 2. VERIFICATION CARD -->
     <div class="card cert-card shadow">
         <div class="card-header bg-white text-center py-3">
-            <span class="3m-logo">3M</span> 
+            <h4 class="mb-0" style="color: #ff0000; font-weight: 900;">RR SOLUTIONS</h4>
             <div class="text-muted small">Inspection & Testing Services</div>
         </div>
 
-        <!-- Banner changes color based on status -->
-        <div class="status-banner {% if data.status == 'Pass' %}pass{% else %}fail{% endif %}">
-            {% if data.status == 'Pass' %}
-                ✅ VERIFIED: VALID
-            {% else %}
-                ❌ ALERT: EXPIRED / FAILED
-            {% endif %}
+        <!-- Banner color logic -->
+        {% set is_valid = data.status == 'Valid' or data.status == 'Pass' %}
+        <div class="status-banner {{ 'pass' if is_valid else 'fail' }}">
+            {{ '✅ VERIFIED: VALID' if is_valid else '❌ ALERT: EXPIRED / FAILED' }}
         </div>
 
         <div class="card-body">
             <table class="table table-borderless">
                 <tr>
-                    <th class="text-muted">Certificate No:</th>
-                    <td><strong>{{ data.cert_id }}</strong></td>
+                    <th class="text-muted">Asset ID:</th>
+                    <td><strong>{{ data.asset_id }}</strong></td>
                 </tr>
                 <tr>
                     <th class="text-muted">Equipment:</th>
-                    <td>{{ data.equipment_name }}</td>
+                    <td>{{ data.equipment }}</td>
+                </tr>
+                <tr>
+                    <th class="text-muted">Form Type:</th>
+                    <td>{{ data.form_type or 'N/A' }}</td>
+                </tr>
+                <tr>
+                    <th class="text-muted">Project Site:</th>
+                    <td>{{ data.site or 'N/A' }}</td>
                 </tr>
                 <tr>
                     <th class="text-muted">Inspection Date:</th>
@@ -48,20 +72,52 @@
                 </tr>
                 <tr>
                     <th class="text-muted">Valid Until:</th>
-                    <td>{{ data.expiry_date }}</td>
-                </tr>
-                <tr>
-                    <th class="text-muted">Inspector:</th>
-                    <td>{{ data.inspector_name }}</td>
+                    <td class="{{ 'text-danger fw-bold' if not is_valid }}">{{ data.expiry_date }}</td>
                 </tr>
             </table>
+            
+            {% if data.pdf_path %}
+            <div class="mt-3 text-center">
+                <a href="/static/pdfs/{{ data.pdf_path }}" class="btn btn-outline-dark btn-sm" target="_blank">
+                    📄 View Digital Certificate
+                </a>
+            </div>
+            {% endif %}
         </div>
         
         <div class="card-footer text-center py-3 bg-white">
-            <small class="text-muted">This is an automated verification record. <br> Digital ID: {{ data.cert_id }}</small>
+            <small class="text-muted">Digital Record ID: {{ data.id }}<br>© 2026 RR Solutions</small>
         </div>
     </div>
 </div>
 
+<script>
+async function uploadFieldDoc(event, assetId) {
+    event.preventDefault();
+    const fileInput = document.getElementById('field-pdf');
+    if (fileInput.files.length === 0) return;
+
+    const formData = new FormData();
+    formData.append('pdf_file', fileInput.files[0]);
+    formData.append('asset_id', assetId);
+
+    try {
+        const response = await fetch('/api/field_upload', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (response.ok) {
+            alert("Success! The document has been linked to Asset " + assetId);
+            location.reload(); 
+        } else {
+            const err = await response.json();
+            alert("Upload failed: " + (err.message || "Unauthorized"));
+        }
+    } catch (err) {
+        alert("Connection error. Check your server.");
+    }
+}
+</script>
 </body>
 </html>

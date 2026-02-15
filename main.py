@@ -20,11 +20,14 @@ if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
 
 # --- DATABASE MODELS ---
+
+
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(120), nullable=False)
     certs = db.relationship('Certificate', backref='owner', lazy=True)
+
 
 class Certificate(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -41,14 +44,18 @@ class Certificate(db.Model):
 with app.app_context():
     db.create_all()
 
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
 # --- AUTH ROUTES ---
+
+
 @app.route('/')
 def index():
     return render_template('index.html')
+
 
 @app.route('/api/register', methods=['POST'])
 def register():
@@ -61,6 +68,7 @@ def register():
     db.session.commit()
     return jsonify({"status": "success"})
 
+
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.json
@@ -70,6 +78,7 @@ def login():
         return jsonify({"status": "success"})
     return jsonify({"status": "error", "message": "Invalid Login"}), 401
 
+
 # --- DASHBOARD & STATS (SQLite Only) ---
 @app.route('/api/dashboard_stats')
 @login_required
@@ -77,7 +86,7 @@ def dashboard_stats():
     user_certs = Certificate.query.filter_by(user_id=current_user.id).all()
     today = datetime.now()
     stats = {"total": len(user_certs), "valid": 0, "soon": 0, "expired": 0}
-    
+
     for c in user_certs:
         try:
             exp = datetime.strptime(c.expiry_date, '%Y-%m-%d')
@@ -87,6 +96,7 @@ def dashboard_stats():
             else: stats["valid"] += 1
         except: continue
     return jsonify(stats)
+
 
 # --- CERTIFICATE CRUD ---
 @app.route('/api/add_certificate', methods=['POST'])
@@ -113,11 +123,13 @@ def add_cert():
     db.session.commit()
     return jsonify({"status": "success"})
 
+
 @app.route('/api/certificates')
 @login_required
 def get_certs():
     certs = Certificate.query.filter_by(user_id=current_user.id).all()
     return jsonify([{"id": c.asset_id, "type": c.equipment, "site": c.site, "expiry": c.expiry_date, "status": c.status} for c in certs])
+
 
 @app.route('/api/delete_certificate/<asset_id>', methods=['DELETE'])
 @login_required
@@ -128,6 +140,7 @@ def delete_certificate(asset_id):
         db.session.commit()
         return jsonify({"status": "success"})
     return jsonify({"status": "error", "message": "Not found"}), 404
+
 
 # --- RENEWALS & NOTIFICATIONS ---
 @app.route('/api/notifications')
@@ -145,6 +158,7 @@ def get_notifications():
         except: continue
     return jsonify(alerts)
 
+
 # --- CHARTS & PROFILE ---
 @app.route('/api/chart_data')
 @login_required
@@ -157,6 +171,7 @@ def chart_data():
         "status_values": [valid, expired],
         "type_labels": ["Equipment"], "type_values": [len(certs)]
     })
+
 
 @app.route('/api/export_csv')
 @login_required
@@ -171,6 +186,7 @@ def export_csv():
     response.headers["Content-Disposition"] = "attachment; filename=report.csv"
     return response
 
+
 # --- QR & VERIFY ---
 @app.route('/generate_qr/<asset_id>')
 def generate_qr(asset_id):
@@ -180,12 +196,40 @@ def generate_qr(asset_id):
     buf.seek(0)
     return send_file(buf, mimetype='image/png')
 
+
 @app.route('/verify/<asset_id>')
 def verify(asset_id):
     cert = Certificate.query.filter_by(asset_id=asset_id).first()
     if cert:
         return render_template('verify_status.html', data=cert)
     return "Not Found", 404
+
+
+@app.route('/api/field_upload', methods=['POST'])
+@login_required  # THIS ENSURES IT IS PRIVATE
+def field_upload():
+    asset_id = request.form.get('asset_id')
+    file = request.files.get('pdf_file')
+
+    if not file or not asset_id:
+        return jsonify({"status": "error", "message": "Missing data"}), 400
+
+    # Find the certificate in SQLite
+    cert = Certificate.query.filter_by(asset_id=asset_id).first()
+
+    if cert:
+        # Save file to static/pdfs folder
+        filename = secure_filename(f"{asset_id}.pdf")
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+        # Update the database record
+        cert.pdf_path = filename
+        db.session.commit()
+
+        return jsonify({"status": "success"})
+
+    return jsonify({"status": "error", "message": "Asset not found"}), 404
+
 
 if __name__ == '__main__':
     app.run(debug=True)

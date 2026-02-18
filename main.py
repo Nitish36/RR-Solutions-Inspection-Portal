@@ -11,7 +11,6 @@ import qrcode
 
 import gspread
 from google.oauth2.service_account import Credentials
-import ssl
 
 app = Flask(__name__, template_folder='template')
 app.config['SECRET_KEY'] = 'RR_SOLUTIONS_SECRET_KEY'

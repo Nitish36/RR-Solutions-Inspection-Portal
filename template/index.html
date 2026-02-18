@@ -43,6 +43,9 @@
       <a onclick="showSection('certificates')">Inventory</a>
       <a onclick="showSection('renewals')">Renewals</a>
       <a onclick="showSection('profile')">Profile</a>
+      {% if current_user.username == 'admin' %}
+        <a onclick="showSection('admin-view')" style="color: #ffc107;">👑 Admin Dashboard</a>
+      {% endif %}
       <a onclick="logout()" class="logout">Logout</a>
     </nav>
   </div>
@@ -158,6 +161,19 @@
 <section id="renewals" class="hidden">
   <h2>Upcoming Renewals</h2>
   <div class="grid"></div>
+</section>
+
+<!-- ADMIN SECTION -->
+<section id="admin-view" class="hidden">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h2>Enterprise Analytics</h2>
+        <button onclick="syncData()" class="btn-small" style="background: #28a745; color:white;">🔄 Sync Live Data</button>
+    </div>
+    
+    <!-- Embed Looker Studio -->
+    <div class="card" style="padding: 0; overflow: hidden; height: 800px; border-radius: 10px;">
+        <iframe width="100%" height="100%" src="https://lookerstudio.google.com/reporting/20f85207-7b8f-4c1f-a380-e9433d4bf9bf" frameborder="0" style="border:0" allowfullscreen></iframe>
+    </div>
 </section>
 
 </main>

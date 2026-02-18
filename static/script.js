@@ -437,6 +437,16 @@ async function loadInventory() {
       console.error("Failed to load inventory:", err);
   }
 }
+/* =====================================================
+   Admin View
+===================================================== */
+
+async function syncData() {
+    const res = await fetch('/api/admin/sync_data');
+    if (res.ok) {
+        alert("Google Sheet updated! Refresh the Looker report to see new data.");
+    }
+}
 
 /* =====================================================
    INIT

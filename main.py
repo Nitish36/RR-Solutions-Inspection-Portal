@@ -9,6 +9,10 @@ import csv
 import io
 import qrcode
 
+import gspread
+from google.oauth2.service_account import Credentials
+import ssl
+
 app = Flask(__name__, template_folder='template')
 app.config['SECRET_KEY'] = 'RR_SOLUTIONS_SECRET_KEY'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///rr_solutions.db'
@@ -18,6 +22,8 @@ login_manager = LoginManager(app)
 
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
+
+
 
 # --- DATABASE MODELS ---
 
@@ -43,6 +49,63 @@ class Certificate(db.Model):
 
 with app.app_context():
     db.create_all()
+
+
+def sync_to_google_sheets():
+    try:
+        print("--- Starting Sync ---")
+
+        # 1. Setup Google Credentials
+        scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+        creds = Credentials.from_service_account_file("cred/diamond-analysis-ac6758ca1ace.json", scopes=scope)
+        client = gspread.authorize(creds)
+        print("Authenticated with Google.")
+
+        # 2. Open your sheet
+        sheet = client.open("RR_Solutions_Master_Data").sheet1
+        print("Successfully opened Google Sheet.")
+
+        # 3. Pull ALL data from SQLite
+        with app.app_context():
+            results = db.session.query(
+                User.username,
+                Certificate.asset_id,
+                Certificate.equipment,
+                Certificate.site,
+                Certificate.inspection_date,
+                Certificate.expiry_date,
+                Certificate.status,
+                Certificate.pdf_path
+            ).join(Certificate).all()
+
+        print(f"Fetched {len(results)} records from SQLite.")
+
+        if not results:
+            print("No data in database to sync.")
+            return
+
+        # 4. Format for Google Sheets
+        headers = ["Username", "Asset ID", "Equipment", "Site", "Inspection Date", "Expiry Date", "Status", "Has PDF?"]
+        rows = [headers]
+
+        for r in results:
+            has_pdf = "Yes" if r.pdf_path else "No"
+            rows.append(
+                [r.username, r.asset_id, r.equipment, r.site, r.inspection_date, r.expiry_date, r.status, has_pdf])
+
+        # 5. Overwrite the sheet
+        sheet.clear()
+        # Using the safer updated syntax
+        sheet.update(values=rows, range_name='A1')
+
+        print("--- Sync Complete! Data is now in Google Sheets ---")
+        return True
+
+    except gspread.exceptions.SpreadsheetNotFound:
+        print("ERROR: Could not find a sheet named 'RR_Solutions_Master_Data'. Make sure the name matches exactly.")
+    except Exception as e:
+        print(f"CRITICAL ERROR: {str(e)}")
+        return False
 
 
 @login_manager.user_loader
@@ -242,6 +305,17 @@ def field_upload():
         return jsonify({"status": "success"})
 
     return jsonify({"status": "error", "message": "Asset not found"}), 404
+
+
+@app.route('/api/admin/sync_data')
+@login_required
+def admin_sync():
+    # You can restrict this to only 'admin' user if you want
+    if current_user.username != 'admin':
+        return jsonify({"message": "Unauthorized"}), 403
+
+    sync_to_google_sheets()
+    return jsonify({"status": "success", "message": "Google Sheet Updated!"})
 
 
 if __name__ == '__main__':

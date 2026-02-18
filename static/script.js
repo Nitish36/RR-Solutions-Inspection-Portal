@@ -449,6 +449,60 @@ async function syncData() {
 }
 
 /* =====================================================
+   Search By ID
+===================================================== */
+
+async function performInventorySearch() {
+    const query = document.getElementById('inventory-search-input').value.trim();
+    if (!query) {
+        alert("Please enter an Asset ID to search.");
+        return;
+    }
+
+    const grid = document.getElementById("cert-display-grid");
+    grid.innerHTML = "<p>Searching...</p>";
+
+    try {
+        const response = await fetch(`/api/search_asset/${query}`);
+        const result = await response.json();
+
+        if (result.status === "success") {
+            const c = result.data;
+            // Display only the found asset
+            grid.innerHTML = `
+                <div class="card" style="border: 2px solid #007bff; position: relative;">
+                    <span style="position: absolute; top: 10px; right: 10px; background: #007bff; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem;">Match Found</span>
+                    <small class="text-muted">ID: ${c.id}</small>
+                    <h3 style="margin: 10px 0;">${c.type}</h3>
+                    <p class="small">Site: ${c.site || 'N/A'}</p>
+                    <div style="text-align:center; margin: 15px 0;">
+                        <img src="/generate_qr/${c.id}" width="100" style="border: 1px solid #eee; padding: 5px;">
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <a href="/static/pdfs/${c.pdf}" target="_blank" class="btn-small" style="text-align:center; text-decoration:none; background: #007bff; color:white; ${!c.pdf ? 'pointer-events: none; opacity: 0.5;' : ''}">
+                            View PDF
+                        </a>
+                        <button onclick="deleteCertificate('${c.id}')" class="btn-small" style="background: #dc3545; color:white; border:none;">
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            `;
+        } else {
+            grid.innerHTML = `
+                <div style="text-align: center; width: 100%; padding: 40px;">
+                    <h3 class="text-danger">Asset Not Found</h3>
+                    <p>The ID "${query}" does not exist in your private inventory.</p>
+                    <button onclick="loadInventory()" class="btn-small" style="background: #333; color: white; border: none;">Show All Assets</button>
+                </div>`;
+        }
+    } catch (err) {
+        console.error("Search Error:", err);
+        grid.innerHTML = "<p class='text-danger'>Search failed. Please try again later.</p>";
+    }
+}
+
+/* =====================================================
    INIT
 ===================================================== */
 window.onload = () => {

@@ -122,13 +122,16 @@
 <!-- INVENTORY / CERTIFICATES (JS Driven) -->
 <section id="certificates" class="hidden">
   <h2>Asset Inventory</h2>
-  <div style="margin-bottom: 20px; text-align: center;">
-      <button onclick="filterByForm('ALL')" class="btn-filter">ALL</button>
-      <button onclick="filterByForm('Form 11')" class="btn-filter">FORM 11</button>
-      <button onclick="filterByForm('Form 13')" class="btn-filter">FORM 13</button>
+
+  <!-- NEW: SEARCH BAR -->
+  <div class="card" style="margin-bottom: 20px; display: flex; gap: 10px; background: #f9f9f9;">
+      <input type="text" id="asset-search-input" placeholder="Enter Asset ID (e.g. 22M0001)" style="flex: 1; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
+      <button onclick="searchCertificateByID()" class="btn-small" style="background: #007bff; color: white; border: none; padding: 10px 20px; cursor: pointer;">Search</button>
+      <button onclick="loadInventory()" class="btn-small" style="background: #6c757d; color: white; border: none; padding: 10px 20px; cursor: pointer;">Reset</button>
   </div>
+
   <div id="cert-display-grid" class="grid">
-      <!-- JavaScript will populate this -->
+      <!-- Search results or full inventory will load here -->
   </div>
 </section>
 
@@ -172,7 +175,7 @@
     
     <!-- Embed Looker Studio -->
     <div class="card" style="padding: 0; overflow: hidden; height: 800px; border-radius: 10px;">
-        <iframe width="100%" height="100%" src="https://lookerstudio.google.com/embed/reporting/9c15621a-f019-4ef5-b519-265a180a75ff/page/tHPOF" frameborder="0" style="border:0" allowfullscreen></iframe>
+        <iframe width="100%" height="100%" src="https://lookerstudio.google.com/reporting/20f85207-7b8f-4c1f-a380-e9433d4bf9bf" frameborder="0" style="border:0" allowfullscreen></iframe>
     </div>
 </section>
 

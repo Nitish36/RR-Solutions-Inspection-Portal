@@ -11,6 +11,7 @@ import qrcode
 
 import gspread
 from google.oauth2.service_account import Credentials
+import ssl
 
 app = Flask(__name__, template_folder='template')
 app.config['SECRET_KEY'] = 'RR_SOLUTIONS_SECRET_KEY'
@@ -215,6 +216,31 @@ def delete_certificate(asset_id):
         db.session.commit()
         return jsonify({"status": "success"})
     return jsonify({"status": "error", "message": "Not found"}), 404
+
+# Search By ID
+@app.route('/api/search_certificate/<query_id>')
+@login_required
+def search_certificate(query_id):
+    # Security: Search ONLY within the certificates owned by the logged-in user
+    cert = Certificate.query.filter_by(
+        asset_id=query_id,
+        user_id=current_user.id
+    ).first()
+
+    if cert:
+        return jsonify({
+            "status": "success",
+            "data": {
+                "id": cert.asset_id,
+                "type": cert.equipment,
+                "site": cert.site,
+                "expiry": cert.expiry_date,
+                "status": cert.status,
+                "pdf": cert.pdf_path
+            }
+        })
+
+    return jsonify({"status": "error", "message": "Asset not found in your account."}), 404
 
 
 # --- RENEWALS & NOTIFICATIONS ---

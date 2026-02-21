@@ -137,7 +137,7 @@ def login():
     data = request.json
     user = User.query.filter_by(username=data['username']).first()
     if user and check_password_hash(user.password, data['password']):
-        login_user(user)
+        login_user(user, remember=True)
         return jsonify({"status": "success"})
     return jsonify({"status": "error", "message": "Invalid Login"}), 401
 
@@ -218,29 +218,29 @@ def delete_certificate(asset_id):
     return jsonify({"status": "error", "message": "Not found"}), 404
 
 # Search By ID
-@app.route('/api/search_certificate/<query_id>')
+@app.route('/api/search_asset/<search_query>')
 @login_required
-def search_certificate(query_id):
-    # Security: Search ONLY within the certificates owned by the logged-in user
-    cert = Certificate.query.filter_by(
-        asset_id=query_id,
+def search_asset(search_query):
+    # This filters by the Asset ID AND ensures it belongs to the logged-in user
+    asset = Certificate.query.filter_by(
+        asset_id=search_query, 
         user_id=current_user.id
     ).first()
 
-    if cert:
+    if asset:
         return jsonify({
             "status": "success",
             "data": {
-                "id": cert.asset_id,
-                "type": cert.equipment,
-                "site": cert.site,
-                "expiry": cert.expiry_date,
-                "status": cert.status,
-                "pdf": cert.pdf_path
+                "id": asset.asset_id,
+                "type": asset.equipment,
+                "site": asset.site,
+                "expiry": asset.expiry_date,
+                "status": asset.status,
+                "pdf": asset.pdf_path
             }
         })
-
-    return jsonify({"status": "error", "message": "Asset not found in your account."}), 404
+    
+    return jsonify({"status": "error", "message": "Asset not found in your inventory"}), 404
 
 
 # --- RENEWALS & NOTIFICATIONS ---
@@ -341,6 +341,23 @@ def admin_sync():
 
     sync_to_google_sheets()
     return jsonify({"status": "success", "message": "Google Sheet Updated!"})
+
+
+@app.route('/api/check_session')
+def check_session():
+    if current_user.is_authenticated:
+        return jsonify({
+            "status": "authenticated", 
+            "user": current_user.username
+        }), 200
+    return jsonify({"status": "unauthenticated"}), 401
+
+
+@app.route('/api/logout')
+@login_required
+def logout():
+    logout_user()
+    return jsonify({"status": "success"})
 
 
 if __name__ == '__main__':

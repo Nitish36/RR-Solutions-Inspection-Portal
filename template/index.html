@@ -121,13 +121,13 @@
 
 <!-- INVENTORY / CERTIFICATES (JS Driven) -->
 <section id="certificates" class="hidden">
-  <h2>Asset Inventory</h2>
+  <h2>My Asset Inventory</h2>
 
-  <!-- NEW: SEARCH BAR -->
-  <div class="card" style="margin-bottom: 20px; display: flex; gap: 10px; background: #f9f9f9;">
-      <input type="text" id="asset-search-input" placeholder="Enter Asset ID (e.g. 22M0001)" style="flex: 1; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
-      <button onclick="searchCertificateByID()" class="btn-small" style="background: #007bff; color: white; border: none; padding: 10px 20px; cursor: pointer;">Search</button>
-      <button onclick="loadInventory()" class="btn-small" style="background: #6c757d; color: white; border: none; padding: 10px 20px; cursor: pointer;">Reset</button>
+  <!-- SEARCH BAR -->
+  <div style="margin-bottom: 20px; display: flex; gap: 10px; background: #fff; padding: 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+      <input type="text" id="inventory-search-input" placeholder="Search by Asset ID (e.g. 22M0001)..." style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+      <button onclick="performInventorySearch()" class="btn-small" style="background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Search</button>
+      <button onclick="loadInventory()" class="btn-small" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Reset</button>
   </div>
 
   <div id="cert-display-grid" class="grid">

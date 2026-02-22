@@ -67,6 +67,7 @@ def sync_to_google_sheets():
 
         # 3. Pull ALL data from SQLite
         with app.app_context():
+            # This query gets the username of the person the certificate was assigned to
             results = db.session.query(
                 User.username,
                 Certificate.asset_id,
@@ -76,7 +77,7 @@ def sync_to_google_sheets():
                 Certificate.expiry_date,
                 Certificate.status,
                 Certificate.pdf_path
-            ).join(Certificate).all()
+            ).join(User, Certificate.user_id == User.id).all() # This connects Cert owner to User table
 
         print(f"Fetched {len(results)} records from SQLite.")
 
@@ -90,9 +91,9 @@ def sync_to_google_sheets():
 
         for r in results:
             has_pdf = "Yes" if r.pdf_path else "No"
-            rows.append(
-                [r.username, r.asset_id, r.equipment, r.site, r.inspection_date, r.expiry_date, r.status, has_pdf])
-
+            # We use r[0], r[1] etc. to ensure we get exactly what the query returned
+            rows.append([r[0], r[1], r[2], r[3], r[4], r[5], r[6], has_pdf])
+            
         # 5. Overwrite the sheet
         sheet.clear()
         # Using the safer updated syntax
@@ -167,11 +168,14 @@ def dashboard_stats():
 def add_cert():
     if current_user.username != 'admin':
         return jsonify({"message": "Unauthorized"}), 403
-    client_username = request.form.get('client_username') 
+
+    # 1. Find the client by the username typed in the form
+    client_username = request.form.get('name') 
     target_user = User.query.filter_by(username=client_username).first()
-    
+
     if not target_user:
-        return jsonify({"status": "error", "message": "Client not found"}), 404
+        return jsonify({"status": "error", "message": f"Client '{client_username}' not found in database"}), 404
+
     asset_id = request.form.get('id')
     file = request.files.get('pdf_file')
     filename = ""
@@ -179,6 +183,7 @@ def add_cert():
         filename = secure_filename(f"{asset_id}.pdf")
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
+    # 2. Save the certificate to the TARGET USER, not current_user
     new_c = Certificate(
         asset_id=asset_id,
         form_type=request.form.get('form_type'),
@@ -187,10 +192,15 @@ def add_cert():
         inspection_date=request.form.get('date'),
         expiry_date=request.form.get('expiry_date'),
         pdf_path=filename,
-        user_id=current_user.id
+        user_id=target_user.id, # <--- CHANGE THIS: Use the client's ID
     )
+
     db.session.add(new_c)
     db.session.commit()
+
+    # 3. Sync to Google Sheets immediately
+    sync_to_google_sheets()
+
     return jsonify({"status": "success"})
 
 

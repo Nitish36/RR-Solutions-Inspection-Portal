@@ -81,7 +81,11 @@
   <div class="card" style="max-width: 600px; margin: auto;">
       <h2>Log New Inspection</h2>
       <form id="add-cert-form" onsubmit="uploadCertificate(event)">
-          
+        <div style="margin-bottom: 15px;">
+          <label>Target Client Username</label>
+          <input type="text" id="name" required style="width:100%; padding:8px;" placeholder="Type the exact username of the client (e.g. client123)">
+          <small style="color: gray;">Note: The client must have registered an account first.</small>
+      </div>
           <div style="margin-bottom: 15px;">
               <label>Asset ID:</label>
               <input type="text" id="new-id" required style="width:100%; padding:8px;">

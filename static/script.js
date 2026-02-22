@@ -396,6 +396,7 @@ async function loadStats() {
 async function uploadCertificate(e) {
     e.preventDefault();
     const fd = new FormData();
+    fd.append("name", document.getElementById("name").value);
     fd.append("id", document.getElementById("new-id").value);
     fd.append("type", document.getElementById("new-equipment").value);
     fd.append("site", document.getElementById("new-site").value);

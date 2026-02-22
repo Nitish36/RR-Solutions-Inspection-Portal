@@ -277,6 +277,40 @@ def get_notifications():
     return jsonify(alerts)
 
 
+@app.route('/api/renewals', methods=['GET'])
+@login_required
+def get_renewals():
+    # 1. Pull ONLY this user's certificates
+    user_certs = Certificate.query.filter_by(user_id=current_user.id).all()
+    today = datetime.now()
+    upcoming_renewals = []
+    print(f"DEBUG: Found {len(user_certs)} total certificates for {current_user.username}")
+    for c in user_certs:
+        try:
+            # 2. Calculate days left
+            clean_date = c.expiry_date.strip()
+            expiry = datetime.strptime(clean_date, '%Y-%m-%d')
+            days_left = (expiry - today).days
+
+            # 3. THE FIX: If it is EXPIRED (negative) OR expiring in less than 60 days
+            if days_left <= 60:
+                print(f"DEBUG: Adding {c.asset_id} to list (Days left: {days_left})")
+                upcoming_renewals.append({
+                    "id": c.asset_id,
+                    "type": c.equipment,
+                    "site": c.site,
+                    "expiry_date": c.expiry_date,
+                    "days_left": days_left,
+                    "status": c.status
+                })
+        except Exception as e:
+            print(f"DEBUG: Error on Asset {c.asset_id} with date '{c.expiry_date}': {e}")
+
+    # 4. Sort by urgency (most expired items show up at the top)
+    upcoming_renewals.sort(key=lambda x: x['days_left'])
+    return jsonify(upcoming_renewals)
+
+
 # --- CHARTS & PROFILE ---
 @app.route('/api/chart_data')
 @login_required

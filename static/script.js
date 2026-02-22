@@ -178,26 +178,60 @@ async function deleteCertificate(id) {
    RENEWALS & ALERTS
 ===================================================== */
 async function loadRenewals() {
-  const response = await fetch("/api/renewals");
-  const renewals = await response.json();
   const grid = document.querySelector("#renewals .grid");
+  if (!grid) {
+      console.error("Could not find the renewals grid element!");
+      return;
+  }
 
-  if(!grid) return;
-  grid.innerHTML = "";
+  grid.innerHTML = "<p>Loading alerts...</p>";
 
-  renewals.forEach(cert => {
-    const color = cert.days_left < 0 ? "#dc3545" : "#ffc107";
-    grid.innerHTML += `
-      <div class="card" style="border-left:5px solid ${color}">
-        <h3>${cert.type}</h3>
-        <p>ID: ${cert.id}</p>
-        <strong style="color:${color}">
-          ${cert.days_left < 0 ? "EXPIRED" : `Expires in ${cert.days_left} days`}
-        </strong>
-        <br><br>
-        <button onclick="requestRetest('${cert.id}')">Request Renewal</button>
-      </div>`;
-  });
+  try {
+      const response = await fetch("/api/renewals");
+      const renewals = await response.json();
+
+      grid.innerHTML = ""; // Clear the "Loading" text
+
+      if (renewals.length === 0) {
+          grid.innerHTML = "<p class='text-muted'>No upcoming renewals or expired items found.</p>";
+          return;
+      }
+
+      renewals.forEach(cert => {
+          // Color logic
+          let color = "#ffc107"; // Yellow for warning
+          let statusText = `Expires in ${cert.days_left} days`;
+
+          if (cert.days_left < 0) {
+              color = "#dc3545"; // Red for expired
+              statusText = `⚠️ EXPIRED (${Math.abs(cert.days_left)} days ago)`;
+          }
+
+          grid.innerHTML += `
+              <div class="card" style="border-left: 6px solid ${color}; padding: 15px; margin-bottom: 15px; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                  <div style="display: flex; justify-content: space-between; align-items: start;">
+                      <div>
+                          <h3 style="margin: 0; color: #333;">${cert.type}</h3>
+                          <small class="text-muted">Asset ID: ${cert.id}</small>
+                      </div>
+                      <span style="background: ${color}; color: white; padding: 2px 8px; border-radius: 5px; font-size: 0.8rem; font-weight: bold;">
+                          ${cert.days_left < 0 ? 'EXPIRED' : 'RENEWAL'}
+                      </span>
+                  </div>
+                  
+                  <p style="margin: 10px 0; color: ${color}; font-weight: bold;">${statusText}</p>
+                  <p class="small text-muted" style="margin-bottom: 15px;">Site: ${cert.site || 'N/A'}</p>
+                  
+                  <button onclick="requestRetest('${cert.id}')" style="width: 100%; background: #333; color: white; border: none; padding: 8px; border-radius: 5px; cursor: pointer;">
+                      Request Re-test / Renewal
+                  </button>
+              </div>
+          `;
+      });
+  } catch (err) {
+      console.error("Renewals load failed:", err);
+      grid.innerHTML = "<p class='text-danger'>Failed to load renewal data.</p>";
+  }
 }
 
 /* =====================================================

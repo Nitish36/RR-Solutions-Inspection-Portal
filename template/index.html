@@ -38,7 +38,7 @@
 
     <nav id="nav-menu">
       <a onclick="showSection('dashboard')">Dashboard</a>
-      <a onclick="showSection('add-certificate')" style="color: #28a745; font-weight: bold;">+ Add Inspection</a>
+      <a id="admin-add-link" onclick="showSection('add-certificate')" style="color: #28a745; font-weight: bold;">+ Add Inspection</a>
       <a onclick="showSection('barcode-scan')">Scanner</a>
       <a onclick="showSection('certificates')">Inventory</a>
       <a onclick="showSection('renewals')">Renewals</a>
@@ -81,6 +81,7 @@
   <div class="card" style="max-width: 600px; margin: auto;">
       <h2>Log New Inspection</h2>
       <form id="add-cert-form" onsubmit="uploadCertificate(event)">
+          
           <div style="margin-bottom: 15px;">
               <label>Asset ID:</label>
               <input type="text" id="new-id" required style="width:100%; padding:8px;">

@@ -363,7 +363,15 @@ async function handleAuth() {
         if (isLoginMode) {
             document.getElementById("login-page").classList.add("hidden");
             document.getElementById("app").classList.remove("hidden");
+            const addLink = document.getElementById('admin-add-link');
+            const usernameInput = document.getElementById("username").value;
+            if (usernameInput !== 'admin') {
+                addLink.style.display = 'none';
+            } else {
+                addLink.style.display = 'block';
+            }
             showSection("dashboard");
+            checkNotifications();
         } else {
             alert("Registered! Now Login.");
             toggleAuth();
@@ -509,11 +517,18 @@ async function performInventorySearch() {
 window.onload = async () => {
   try {
       const response = await fetch('/api/check_session');
+      const result = await response.json();
       
       if (response.ok) {
           // Server says we are already logged in!
           document.getElementById("login-page").classList.add("hidden");
           document.getElementById("app").classList.remove("hidden");
+          const addLink = document.getElementById('admin-add-link');
+            if (result.user !== 'admin') {
+                addLink.style.display = 'none'; // Hide if not admin
+            } else {
+                addLink.style.display = 'block'; // Show if admin
+            }
           showSection("dashboard");
           checkNotifications(); // Check for alerts immediately
       } else {

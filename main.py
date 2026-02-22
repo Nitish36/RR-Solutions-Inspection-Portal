@@ -165,6 +165,13 @@ def dashboard_stats():
 @app.route('/api/add_certificate', methods=['POST'])
 @login_required
 def add_cert():
+    if current_user.username != 'admin':
+        return jsonify({"message": "Unauthorized"}), 403
+    client_username = request.form.get('client_username') 
+    target_user = User.query.filter_by(username=client_username).first()
+    
+    if not target_user:
+        return jsonify({"status": "error", "message": "Client not found"}), 404
     asset_id = request.form.get('id')
     file = request.files.get('pdf_file')
     filename = ""

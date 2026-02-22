@@ -1,1 +1,7 @@
+Flask
+Flask-SQLAlchemy
+Flask-Login
 qrcode
+pillow
+gspread
+google-auth

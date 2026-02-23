@@ -1,17 +1,17 @@
+import sqlite3
 from flask import Flask, render_template, request, jsonify, make_response, send_file
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 import csv
 import io
 import qrcode
-
+import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
-import ssl
 
 app = Flask(__name__, template_folder='template')
 app.config['SECRET_KEY'] = 'RR_SOLUTIONS_SECRET_KEY'
@@ -280,35 +280,38 @@ def get_notifications():
 @app.route('/api/renewals', methods=['GET'])
 @login_required
 def get_renewals():
-    # 1. Pull ONLY this user's certificates
-    user_certs = Certificate.query.filter_by(user_id=current_user.id).all()
-    today = datetime.now()
-    upcoming_renewals = []
-    print(f"DEBUG: Found {len(user_certs)} total certificates for {current_user.username}")
-    for c in user_certs:
-        try:
-            # 2. Calculate days left
-            clean_date = c.expiry_date.strip()
-            expiry = datetime.strptime(clean_date, '%Y-%m-%d')
-            days_left = (expiry - today).days
+    # 1. Connect to the database
+    conn = sqlite3.connect('instance/rr_solutions.db')  # Ensure path matches your setup
 
-            # 3. THE FIX: If it is EXPIRED (negative) OR expiring in less than 60 days
-            if days_left <= 60:
-                print(f"DEBUG: Adding {c.asset_id} to list (Days left: {days_left})")
-                upcoming_renewals.append({
-                    "id": c.asset_id,
-                    "type": c.equipment,
-                    "site": c.site,
-                    "expiry_date": c.expiry_date,
-                    "days_left": days_left,
-                    "status": c.status
-                })
-        except Exception as e:
-            print(f"DEBUG: Error on Asset {c.asset_id} with date '{c.expiry_date}': {e}")
+    # 2. Pull all certificates for the logged-in user into a Pandas DataFrame
+    query = f"SELECT asset_id as id, equipment as type, site, expiry_date FROM certificate WHERE user_id = {current_user.id}"
+    df = pd.read_sql_query(query, conn)
+    conn.close()
 
-    # 4. Sort by urgency (most expired items show up at the top)
-    upcoming_renewals.sort(key=lambda x: x['days_left'])
-    return jsonify(upcoming_renewals)
+    if df.empty:
+        return jsonify([])
+
+    # 3. Use Pandas magic to handle dates
+    today = pd.to_datetime(datetime.now().date())
+    df['expiry_date'] = pd.to_datetime(df['expiry_date'])
+
+    # Calculate days left
+    df['days_left'] = (df['expiry_date'] - today).dt.days
+
+    # 4. Filter: Show everything already expired OR expiring within 60 days
+    # (Matches your requirement to see the 2026-02-19 items)
+    renewals_df = df[df['days_left'] <= 60].copy()
+
+    # 5. Sort by most urgent
+    renewals_df = renewals_df.sort_values(by='days_left')
+
+    # 6. Convert expiry_date back to string for JSON (since JSON doesn't like Timestamps)
+    renewals_df['expiry_date'] = renewals_df['expiry_date'].dt.strftime('%Y-%m-%d')
+
+    # 7. Convert DataFrame to a list of dictionaries for the frontend
+    result = renewals_df.to_dict(orient='records')
+
+    return jsonify(result)
 
 
 # --- CHARTS & PROFILE ---

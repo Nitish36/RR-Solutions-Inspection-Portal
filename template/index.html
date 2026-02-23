@@ -23,7 +23,7 @@
     <input type="text" id="username" placeholder="User ID">
     <input type="password" id="password" placeholder="Password">
     <button onclick="handleAuth()" id="auth-btn">Login</button>
-    <p><a href="javascript:void(0)" onclick="toggleAuth()" id="toggle-link">New user? Register</a></p>
+    <!--<p><a href="javascript:void(0)" onclick="toggleAuth()" id="toggle-link">New user? Register</a></p>-->
   </div>
 </section>
 
@@ -45,7 +45,9 @@
       <a onclick="showSection('renewals')">Renewals</a>
       <a onclick="showSection('profile')">Profile</a>
       {% if current_user.username == 'admin' %}
+        <a onclick="showSection('user-management')" style="color: #007bff; font-weight: bold;">👥 Manage Users</a>
         <a onclick="showSection('admin-view')" style="color: #ffc107;">👑 Admin Dashboard</a>
+
       {% endif %}
       <a onclick="logout()" class="logout">Logout</a>
     </nav>
@@ -125,6 +127,36 @@
   </div>
 </section>
 
+<!-- User Management -->
+ <!-- USER MANAGEMENT SECTION -->
+<section id="user-management" class="hidden">
+    <div class="card" style="max-width: 600px; margin: auto; border-top: 5px solid #007bff;">
+        <h2>User Management</h2>
+        <p class="text-muted">Create official accounts for your clients here.</p>
+        <hr>
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
+            <div style="margin-bottom: 15px;">
+                <label>Client Username:</label>
+                <input type="text" id="admin-new-client-user" placeholder="e.g. Tata_Motors" style="width:100%; padding:10px; border: 1px solid #ddd;">
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label>Initial Password:</label>
+                <input type="password" id="admin-new-client-pass" placeholder="e.g. Welcome@2026" style="width:100%; padding:10px; border: 1px solid #ddd;">
+            </div>
+
+            <button onclick="adminCreateUser()" style="width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer;">
+                Create Client Account
+            </button>
+        </div>
+
+        <div style="margin-top: 20px; padding: 10px; background: #e7f1ff; border-radius: 5px;">
+            <small><strong>Note:</strong> Once created, you can assign certificates to this username using the "+ Add Inspection" tool.</small>
+        </div>
+    </div>
+</section>
+
 <!-- INVENTORY / CERTIFICATES (JS Driven) -->
 <section id="certificates" class="hidden">
   <h2>My Asset Inventory</h2>
@@ -183,8 +215,9 @@
     
     <!-- Embed Looker Studio -->
     <div class="card" style="padding: 0; overflow: hidden; height: 800px; border-radius: 10px;">
-        <iframe width="100%" height="100%" src="https://lookerstudio.google.com/reporting/20f85207-7b8f-4c1f-a380-e9433d4bf9bf" frameborder="0" style="border:0" allowfullscreen></iframe>
+        <iframe width="100%" height="100%" src="https://lookerstudio.google.com/embed/reporting/c0321cf5-b668-4672-b3b9-daf991a36045/page/kbopF" frameborder="0" style="border:0" allowfullscreen></iframe>
     </div>
+
 </section>
 
 </main>

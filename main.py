@@ -122,15 +122,26 @@ def index():
 
 
 @app.route('/api/register', methods=['POST'])
+@login_required  # Now requires a login to even reach this
 def register():
+    # 1. SECURITY: Only the admin can create new accounts
+    if current_user.username != 'admin':
+        return jsonify({"status": "error", "message": "Unauthorized: Only admin can create users"}), 403
+
     data = request.json
-    if User.query.filter_by(username=data['username']).first():
-        return jsonify({"status": "error", "message": "User exists"}), 400
-    hashed = generate_password_hash(data['password'], method='pbkdf2:sha256')
-    new_user = User(username=data['username'], password=hashed)
+    username = data.get('username')
+    password = data.get('password')
+
+    if User.query.filter_by(username=username).first():
+        return jsonify({"status": "error", "message": "User already exists"}), 400
+
+    # 2. Create the user with hashed password
+    hashed = generate_password_hash(password, method='pbkdf2:sha256')
+    new_user = User(username=username, password=hashed)
     db.session.add(new_user)
     db.session.commit()
-    return jsonify({"status": "success"})
+
+    return jsonify({"status": "success", "message": f"Account for {username} created!"})
 
 
 @app.route('/api/login', methods=['POST'])

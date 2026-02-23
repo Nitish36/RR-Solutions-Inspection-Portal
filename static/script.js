@@ -99,6 +99,37 @@ async function logout() {
   location.reload();          
 }
 
+async function adminCreateUser() {
+    const u = document.getElementById("admin-new-client-user").value.trim();
+    const p = document.getElementById("admin-new-client-pass").value.trim();
+
+    if (!u || !p) {
+        alert("Please provide both a username and a password.");
+        return;
+    }
+
+    try {
+        const response = await fetch("/api/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username: u, password: p })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            alert(`SUCCESS: Account for "${u}" has been created!`);
+            // Clear the form
+            document.getElementById("admin-new-client-user").value = "";
+            document.getElementById("admin-new-client-pass").value = "";
+        } else {
+            alert("Error: " + result.message);
+        }
+    } catch (err) {
+        alert("Server connection failed.");
+    }
+}
+
 /* =====================================================
    DATA LOADING FUNCTIONS
 ===================================================== */

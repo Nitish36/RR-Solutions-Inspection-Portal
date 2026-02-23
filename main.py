@@ -51,10 +51,39 @@ with app.app_context():
     db.create_all()
 
 
+def update_all_statuses():
+    with app.app_context():
+        today = datetime.now()
+        certs = Certificate.query.all()
+
+        updated_count = 0
+        for c in certs:
+            try:
+                # IMPORTANT: Ensure your format matches how you saved it.
+                # If you saved as 2026-02-19, use '%Y-%m-%d'
+                # If you saved as 2/19/2026, use '%m/%d/%Y'
+                expiry = datetime.strptime(c.expiry_date, '%Y-%m-%d')
+
+                # If today is past the expiry date
+                if expiry < today:
+                    if c.status != "Expired":
+                        c.status = "Expired"
+                        updated_count += 1
+                else:
+                    if c.status != "Valid":
+                        c.status = "Valid"
+                        updated_count += 1
+            except Exception as e:
+                print(f"Error updating status for {c.asset_id}: {e}")
+
+        if updated_count > 0:
+            db.session.commit()
+            print(f"Database Sync: {updated_count} statuses updated to reflect current date.")
+
 def sync_to_google_sheets():
     try:
         print("--- Starting Sync ---")
-
+        update_all_statuses()
         # 1. Setup Google Credentials
         scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
         creds = Credentials.from_service_account_file("cred/diamond-analysis-ac6758ca1ace.json", scopes=scope)
@@ -158,6 +187,7 @@ def login():
 @app.route('/api/dashboard_stats')
 @login_required
 def dashboard_stats():
+    update_all_statuses()
     user_certs = Certificate.query.filter_by(user_id=current_user.id).all()
     today = datetime.now()
     stats = {"total": len(user_certs), "valid": 0, "soon": 0, "expired": 0}
@@ -219,6 +249,7 @@ def add_cert():
 @login_required
 def get_certs():
     # We query the database for certificates ONLY where user_id matches the logged-in user
+    update_all_statuses()
     user_certs = Certificate.query.filter_by(user_id=current_user.id).all()
 
     # We convert the SQLite objects into a list of dictionaries for JavaScript

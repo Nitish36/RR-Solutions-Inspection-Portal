@@ -20,6 +20,8 @@ app.config['UPLOAD_FOLDER'] = 'static/pdfs'
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 
+
+
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
 
@@ -44,11 +46,17 @@ class Certificate(db.Model):
     inspection_date = db.Column(db.String(20))
     expiry_date = db.Column(db.String(20))
     status = db.Column(db.String(20), default="Valid")
-    pdf_path = db.Column(db.String(200)) 
+    pdf_path = db.Column(db.String(200))
+    renewal_status = db.Column(db.String(50), default="Not Started")
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 with app.app_context():
     db.create_all()
+    # Admin Seeder
+    if not User.query.filter_by(username='admin').first():
+        hashed_pw = generate_password_hash('admin123', method='pbkdf2:sha256')
+        db.session.add(User(username='admin', password=hashed_pw))
+        db.session.commit()
 
 
 def update_all_statuses():
@@ -105,6 +113,7 @@ def sync_to_google_sheets():
                 Certificate.inspection_date,
                 Certificate.expiry_date,
                 Certificate.status,
+                Certificate.renewal_status,
                 Certificate.pdf_path
             ).join(User, Certificate.user_id == User.id).all() # This connects Cert owner to User table
 
@@ -115,13 +124,13 @@ def sync_to_google_sheets():
             return
 
         # 4. Format for Google Sheets
-        headers = ["Username", "Asset ID", "Equipment", "Site", "Inspection Date", "Expiry Date", "Status", "Has PDF?"]
+        headers = ["Username", "Asset ID", "Equipment", "Site", "Inspection Date", "Expiry Date", "Status", "Renewal Stage" ,"Has PDF?"]
         rows = [headers]
 
         for r in results:
             has_pdf = "Yes" if r.pdf_path else "No"
             # We use r[0], r[1] etc. to ensure we get exactly what the query returned
-            rows.append([r[0], r[1], r[2], r[3], r[4], r[5], r[6], has_pdf])
+            rows.append([r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7] , has_pdf])
             
         # 5. Overwrite the sheet
         sheet.clear()
@@ -245,6 +254,24 @@ def add_cert():
     return jsonify({"status": "success"})
 
 
+@app.route('/api/request_retest/<asset_id>', methods=['POST'])
+@login_required
+def request_retest(asset_id):
+    # Find the specific asset belonging to this user
+    cert = Certificate.query.filter_by(asset_id=asset_id, user_id=current_user.id).first()
+
+    if cert:
+        # Update the renewal status in the DB
+        cert.renewal_status = "Renewal Requested"
+        db.session.commit()
+
+        # Sync to Google Sheets so the Admin sees the request in Looker Studio
+        sync_to_google_sheets()
+
+        return jsonify({"status": "success", "message": f"Renewal request for {asset_id} logged!"})
+
+    return jsonify({"status": "error", "message": "Asset not found"}), 404
+
 @app.route('/api/certificates')
 @login_required
 def get_certs():
@@ -261,6 +288,7 @@ def get_certs():
             "site": c.site,
             "expiry": c.expiry_date,
             "status": c.status,
+            "renewal_status": c.renewal_status,
             "pdf": c.pdf_path # We include the PDF filename so the user can open it
         })
     return jsonify(output)

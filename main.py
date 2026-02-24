@@ -445,6 +445,7 @@ def export_csv():
 
 
 # --- QR & VERIFY ---
+"""
 @app.route('/generate_qr/<asset_id>')
 def generate_qr(asset_id):
     qr = qrcode.make(f"{request.host_url}verify/{asset_id}")
@@ -452,7 +453,7 @@ def generate_qr(asset_id):
     qr.save(buf, format='PNG')
     buf.seek(0)
     return send_file(buf, mimetype='image/png')
-
+"""
 
 @app.route('/verify/<asset_id>')
 def verify(asset_id):

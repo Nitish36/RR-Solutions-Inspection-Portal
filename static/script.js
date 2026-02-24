@@ -20,6 +20,55 @@ if (mobileMenu) {
   });
 }
 
+/* =====================================================
+   RECOVERED: NOTIFICATION SYSTEM (Using Toasts)
+===================================================== */
+async function checkNotifications() {
+    try {
+        const response = await fetch('/api/notifications');
+        const alerts = await response.json();
+
+        if (alerts && alerts.length > 0) {
+            alerts.forEach(a => {
+                // Determine toast type based on urgency
+                const type = a.type === 'urgent' ? 'error' : 'info';
+                showFlash(`Asset #${a.id}: ${a.msg}`, type);
+            });
+        }
+    } catch (error) {
+        console.error("Notification Error:", error);
+    }
+}
+
+/* =====================================================
+   FIXED: FLASH SYSTEM
+===================================================== */
+function showFlash(message, type = 'success') {
+    const container = document.getElementById('flash-container');
+    if (!container) return; // Exit if container doesn't exist
+
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    
+    toast.innerHTML = `
+        <div style="display:flex; align-items:center; gap:10px;">
+            <span>${type === 'error' ? '🛑' : type === 'info' ? 'ℹ️' : '✅'}</span>
+            <span>${message}</span>
+        </div>
+        <button onclick="this.parentElement.remove()" style="background:none; border:none; color:white; cursor:pointer; font-size:1.2rem; margin-left:15px;">&times;</button>
+    `;
+
+    container.appendChild(toast);
+
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        toast.style.transition = 'all 0.5s ease';
+        setTimeout(() => toast.remove(), 500);
+    }, 5000);
+}
+
 function showSection(id) {
   if (id !== "barcode-scan" && html5QrCode?.isScanning) {
     stopScanner();
@@ -71,12 +120,12 @@ async function handleAuth() {
             showSection("dashboard");
             checkNotifications();
         } else {
-            alert("Registered! Now Login.");
+            showFlash("Account created! Please login.", "success");
             toggleAuth();
         }
     } else { 
         const err = await res.json();
-        alert("Error: " + err.message); 
+        showFlash(err.message, "error");
     }
 }
 
@@ -108,14 +157,14 @@ async function adminCreateUser() {
         });
         const result = await response.json();
         if (response.ok) {
-            alert(`SUCCESS: Account for "${u}" has been created!`);
+            showFlash("New client account ready!", "success");
             document.getElementById("admin-new-client-user").value = "";
             document.getElementById("admin-new-client-pass").value = "";
         } else {
-            alert("Error: " + result.message);
+            showFlash(err.message, "error");
         }
     } catch (err) {
-        alert("Server connection failed.");
+        showFlash("Server Connection Failed", "error");
     }
 }
 
@@ -192,16 +241,16 @@ async function requestRetest(assetId) {
         const result = await response.json();
 
         if (response.ok) {
-            alert("Success: " + result.message);
+            showFlash("Renewal request sent to RR Solutions", "info");
             // Refresh the views to show the updated "Renewal Requested" badge
             loadRenewals();
             loadInventory();
         } else {
-            alert("Error: " + (result.message || "Failed to send request."));
+            showFlash("Renewal request Dailed", "danger");
         }
     } catch (err) {
         console.error("Retest request failed:", err);
-        alert("Server connection failed. Please try again later.");
+        showFlash("Server connection failed. Please try again later.", "danger");
     }
 }
 
@@ -244,13 +293,13 @@ async function uploadCertificate(e) {
     fd.append("pdf_file", document.getElementById("new-pdf").files[0]);
 
     const res = await fetch("/api/add_certificate", { method: "POST", body: fd });
-    if (res.ok) { alert("Saved!"); showSection("certificates"); }
-    else { alert("Error saving certificate"); }
+    if (res.ok) { showFlash("Certificate saved and synced!", "success"); showSection("certificates"); }
+    else { showFlash("Error Saving The Certificate!", "danger"); }
 }
 
 async function syncData() {
     const res = await fetch('/api/admin/sync_data');
-    if (res.ok) alert("Google Sheet updated!");
+    if (res.ok) showFlash("Cloud database synced successfully", "success");
 }
 
 /* =====================================================

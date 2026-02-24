@@ -178,6 +178,33 @@ async function loadInventory() {
   }
 }
 
+/* =====================================================
+   RETEST / RENEWAL REQUEST
+===================================================== */
+async function requestRetest(assetId) {
+    if (!confirm(`Send a re-test request to RR Solutions for Asset ID: ${assetId}?`)) return;
+
+    try {
+        const response = await fetch(`/api/request_retest/${assetId}`, {
+            method: 'POST'
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            alert("Success: " + result.message);
+            // Refresh the views to show the updated "Renewal Requested" badge
+            loadRenewals();
+            loadInventory();
+        } else {
+            alert("Error: " + (result.message || "Failed to send request."));
+        }
+    } catch (err) {
+        console.error("Retest request failed:", err);
+        alert("Server connection failed. Please try again later.");
+    }
+}
+
 async function loadRenewals() {
   const grid = document.querySelector("#renewals .grid");
   if (!grid) return;

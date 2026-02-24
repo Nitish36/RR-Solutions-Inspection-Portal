@@ -216,10 +216,11 @@ def dashboard_stats():
 @app.route('/api/add_certificate', methods=['POST'])
 @login_required
 def add_cert():
+    # 1. Security Check: Only admin can add/renew certificates
     if current_user.username != 'admin':
         return jsonify({"message": "Unauthorized"}), 403
 
-    # 1. Find the client by the username typed in the form
+    # 2. Find the client by the username typed in the form
     client_username = request.form.get('name') 
     target_user = User.query.filter_by(username=client_username).first()
 
@@ -227,28 +228,59 @@ def add_cert():
         return jsonify({"status": "error", "message": f"Client '{client_username}' not found in database"}), 404
 
     asset_id = request.form.get('id')
+    
+    # 3. Check if this Asset ID already exists (to see if we are Renewing or Adding New)
+    existing_cert = Certificate.query.filter_by(asset_id=asset_id).first()
+
+    # 4. Handle PDF Upload
     file = request.files.get('pdf_file')
-    filename = ""
+    filename = None
     if file:
         filename = secure_filename(f"{asset_id}.pdf")
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
-    # 2. Save the certificate to the TARGET USER, not current_user
-    new_c = Certificate(
-        asset_id=asset_id,
-        form_type=request.form.get('form_type'),
-        equipment=request.form.get('type'),
-        site=request.form.get('site'),
-        inspection_date=request.form.get('date'),
-        expiry_date=request.form.get('expiry_date'),
-        pdf_path=filename,
-        user_id=target_user.id, # <--- CHANGE THIS: Use the client's ID
-    )
+    if existing_cert:
+        # --- RENEWAL LOGIC ---
+        # Update existing record with new data from the form
+        existing_cert.form_type = request.form.get('form_type')
+        existing_cert.equipment = request.form.get('type')
+        existing_cert.site = request.form.get('site')
+        existing_cert.inspection_date = request.form.get('date')
+        existing_cert.expiry_date = request.form.get('expiry_date')
+        existing_cert.status = "Valid"
+        
+        # Reset the renewal stage because the admin has now finished the inspection
+        existing_cert.renewal_status = "Not Started"
+        
+        # Update the owner (in case the equipment moved to a different client)
+        existing_cert.user_id = target_user.id
+        
+        # If a new PDF was uploaded, update the path
+        if filename:
+            existing_cert.pdf_path = filename
+            
+        print(f"Asset {asset_id} has been RENEWED.")
+    else:
+        # --- NEW CERTIFICATE LOGIC ---
+        new_c = Certificate(
+            asset_id=asset_id,
+            form_type=request.form.get('form_type'),
+            equipment=request.form.get('type'),
+            site=request.form.get('site'),
+            inspection_date=request.form.get('date'),
+            expiry_date=request.form.get('expiry_date'),
+            status="Valid",
+            renewal_status="Not Started", # Default for new equipment
+            pdf_path=filename if filename else "",
+            user_id=target_user.id
+        )
+        db.session.add(new_c)
+        print(f"Asset {asset_id} has been ADDED to {client_username}.")
 
-    db.session.add(new_c)
+    # 5. Save changes to SQLite
     db.session.commit()
 
-    # 3. Sync to Google Sheets immediately
+    # 6. Sync to Google Sheets immediately
     sync_to_google_sheets()
 
     return jsonify({"status": "success"})

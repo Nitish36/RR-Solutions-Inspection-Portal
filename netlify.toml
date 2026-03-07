@@ -1,0 +1,8 @@
+[build]
+  command = "pip install -r requirements.txt"
+  publish = "static"
+
+[[redirects]]
+  from = "/*"
+  to = "/api/index"
+  status = 200

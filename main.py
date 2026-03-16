@@ -80,31 +80,30 @@ with app.app_context():
 
 def upload_pdf_to_drive(file_obj, filename):
     try:
-        creds = get_google_creds()  # Uses your existing function
+        creds = get_google_creds()
         service = build('drive', 'v3', credentials=creds)
 
-        file_metadata = {
-            'name': filename,
-            'parents': [DRIVE_FOLDER_ID]
-        }
+        file_metadata = {'name': filename, 'parents': [DRIVE_FOLDER_ID]}
 
-        # Prepare the file for upload
-        media = MediaIoBaseUpload(file_obj, mimetype='application/pdf', resumable=True)
+        # We need to convert the Flask file object to a BytesIO stream
+        # This ensures the upload works on cloud servers like Render
+        file_stream = io.BytesIO(file_obj.read())
 
-        # Upload the file
+        media = MediaIoBaseUpload(file_stream, mimetype='application/pdf', resumable=True)
+
         file = service.files().create(
             body=file_metadata,
             media_body=media,
             fields='id, webViewLink'
         ).execute()
 
-        # Set permission so anyone with the link can view it (Optional but recommended)
+        # Permissions: Make it viewable by your clients
         service.permissions().create(
             fileId=file.get('id'),
             body={'type': 'anyone', 'role': 'viewer'}
         ).execute()
 
-        return file.get('webViewLink')  # This is the permanent link to the PDF
+        return file.get('webViewLink')
     except Exception as e:
         print(f"Drive Upload Error: {e}")
         return None

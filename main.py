@@ -51,7 +51,7 @@ if not os.path.exists(app.config['UPLOAD_FOLDER']):
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=True)
+    email = db.Column(db.String(120), nullable=True)
     password = db.Column(db.String(120), nullable=False)
     certs = db.relationship('Certificate', backref='owner', lazy=True)
 
@@ -74,7 +74,7 @@ with app.app_context():
     # Admin Seeder
     if not User.query.filter_by(username='admin').first():
         hashed_pw = generate_password_hash('admin123', method='pbkdf2:sha256')
-        db.session.add(User(username='admin', password=hashed_pw))
+        db.session.add(User(username='admin', password=hashed_pw, email="nitish.pkv@gmail.com"))
         db.session.commit()
 
 

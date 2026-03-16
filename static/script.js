@@ -142,10 +142,11 @@ async function logout() {
 
 async function adminCreateUser() {
     const u = document.getElementById("admin-new-client-user").value.trim();
+    const e = document.getElementById("admin-new-client-user-email").value.trim();
     const p = document.getElementById("admin-new-client-pass").value.trim();
 
-    if (!u || !p) {
-        alert("Please provide both a username and a password.");
+    if (!u || !p || !e) {
+        alert("Please provide both a username, email and a password.");
         return;
     }
 
@@ -153,12 +154,13 @@ async function adminCreateUser() {
         const response = await fetch("/api/register", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username: u, password: p })
+            body: JSON.stringify({ username: u, password: p , email: e})
         });
         const result = await response.json();
         if (response.ok) {
             showFlash("New client account ready!", "success");
             document.getElementById("admin-new-client-user").value = "";
+            document.getElementById("admin-new-client-user-email").value = "";
             document.getElementById("admin-new-client-pass").value = "";
         } else {
             showFlash(err.message, "error");

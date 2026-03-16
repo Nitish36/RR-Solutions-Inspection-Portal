@@ -1,3 +1,4 @@
+import json
 import sqlite3
 from flask import Flask, render_template, request, jsonify, make_response, send_file
 from flask_sqlalchemy import SQLAlchemy
@@ -12,27 +13,41 @@ import qrcode
 import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
+import psycopg2
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__, template_folder='template')
 app.config['SECRET_KEY'] = 'RR_SOLUTIONS_SECRET_KEY'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///rr_solutions.db'
-app.config['UPLOAD_FOLDER'] = 'static/pdfs'
+
+# --- DATABASE CONFIGURATION ---
+# Check if we are on Render (Cloud) or Local
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+if DATABASE_URL:
+    # Fix for SQLAlchemy: URLs must start with postgresql:// not postgres://
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+else:
+    # Fallback to local SQLite for development
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///rr_solutions.db'
+
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+
+app.config['UPLOAD_FOLDER'] = 'static/pdfs'
 login_manager = LoginManager(app)
-
-
 
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
 
-
-
 # --- DATABASE MODELS ---
-
-
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=True)
     password = db.Column(db.String(120), nullable=False)
     certs = db.relationship('Certificate', backref='owner', lazy=True)
 
@@ -88,13 +103,31 @@ def update_all_statuses():
             db.session.commit()
             print(f"Database Sync: {updated_count} statuses updated to reflect current date.")
 
+
+def get_google_creds():
+    # 1. Check if we are on Render (looking for a Secret Environment Variable)
+    creds_json = os.environ.get('GOOGLE_CREDENTIALS')
+
+    if creds_json:
+        # We are on Render: Parse the string back into a dictionary
+        info = json.loads(creds_json)
+        return Credentials.from_service_account_info(info, scopes=[
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive"
+        ])
+    else:
+        # We are on Local Laptop: Load from the file as usual
+        return Credentials.from_service_account_file(
+            "cred/diamond-analysis-ac6758ca1ace.json",
+            scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+        )
+
 def sync_to_google_sheets():
     try:
         print("--- Starting Sync ---")
         update_all_statuses()
         # 1. Setup Google Credentials
-        scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-        creds = Credentials.from_service_account_file("cred/diamond-analysis-ac6758ca1ace.json", scopes=scope)
+        creds = get_google_creds()
         client = gspread.authorize(creds)
         print("Authenticated with Google.")
 
@@ -168,6 +201,7 @@ def register():
 
     data = request.json
     username = data.get('username')
+    email = data.get('email')
     password = data.get('password')
 
     if User.query.filter_by(username=username).first():
@@ -175,7 +209,7 @@ def register():
 
     # 2. Create the user with hashed password
     hashed = generate_password_hash(password, method='pbkdf2:sha256')
-    new_user = User(username=username, password=hashed)
+    new_user = User(username=username, password=hashed, email=email)
     db.session.add(new_user)
     db.session.commit()
 

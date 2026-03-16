@@ -15,6 +15,9 @@ import gspread
 from google.oauth2.service_account import Credentials
 import psycopg2
 from dotenv import load_dotenv
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseUpload
+
 
 load_dotenv()
 
@@ -24,6 +27,7 @@ app.config['SECRET_KEY'] = 'RR_SOLUTIONS_SECRET_KEY'
 # --- DATABASE CONFIGURATION ---
 # Check if we are on Render (Cloud) or Local
 DATABASE_URL = os.environ.get('DATABASE_URL')
+DRIVE_FOLDER_ID = "https://drive.google.com/drive/folders/107Y_7HUJXMWSBmlLkNrPrJS5Orogvbvz"
 
 if DATABASE_URL:
     # Fix for SQLAlchemy: URLs must start with postgresql:// not postgres://
@@ -73,6 +77,37 @@ with app.app_context():
         db.session.add(User(username='admin', password=hashed_pw))
         db.session.commit()
 
+
+def upload_pdf_to_drive(file_obj, filename):
+    try:
+        creds = get_google_creds()  # Uses your existing function
+        service = build('drive', 'v3', credentials=creds)
+
+        file_metadata = {
+            'name': filename,
+            'parents': [DRIVE_FOLDER_ID]
+        }
+
+        # Prepare the file for upload
+        media = MediaIoBaseUpload(file_obj, mimetype='application/pdf', resumable=True)
+
+        # Upload the file
+        file = service.files().create(
+            body=file_metadata,
+            media_body=media,
+            fields='id, webViewLink'
+        ).execute()
+
+        # Set permission so anyone with the link can view it (Optional but recommended)
+        service.permissions().create(
+            fileId=file.get('id'),
+            body={'type': 'anyone', 'role': 'viewer'}
+        ).execute()
+
+        return file.get('webViewLink')  # This is the permanent link to the PDF
+    except Exception as e:
+        print(f"Drive Upload Error: {e}")
+        return None
 
 def update_all_statuses():
     with app.app_context():
@@ -250,73 +285,49 @@ def dashboard_stats():
 @app.route('/api/add_certificate', methods=['POST'])
 @login_required
 def add_cert():
-    # 1. Security Check: Only admin can add/renew certificates
     if current_user.username != 'admin':
         return jsonify({"message": "Unauthorized"}), 403
 
-    # 2. Find the client by the username typed in the form
-    client_username = request.form.get('name') 
-    target_user = User.query.filter_by(username=client_username).first()
+    asset_id = request.form.get('id')
+    client_name = request.form.get('name')
+    target_user = User.query.filter_by(username=client_name).first()
 
     if not target_user:
-        return jsonify({"status": "error", "message": f"Client '{client_username}' not found in database"}), 404
+        return jsonify({"status": "error", "message": "Client not found"}), 404
 
-    asset_id = request.form.get('id')
-    
-    # 3. Check if this Asset ID already exists (to see if we are Renewing or Adding New)
+    file = request.files.get('pdf_file')
+    drive_link = ""
+
+    if file:
+        # Instead of saving locally, we send the stream to Google Drive
+        filename = f"{asset_id}.pdf"
+        drive_link = upload_pdf_to_drive(file, filename)
+
+    # Check if we are updating or creating
     existing_cert = Certificate.query.filter_by(asset_id=asset_id).first()
 
-    # 4. Handle PDF Upload
-    file = request.files.get('pdf_file')
-    filename = None
-    if file:
-        filename = secure_filename(f"{asset_id}.pdf")
-        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-
     if existing_cert:
-        # --- RENEWAL LOGIC ---
-        # Update existing record with new data from the form
-        existing_cert.form_type = request.form.get('form_type')
-        existing_cert.equipment = request.form.get('type')
-        existing_cert.site = request.form.get('site')
         existing_cert.inspection_date = request.form.get('date')
         existing_cert.expiry_date = request.form.get('expiry_date')
-        existing_cert.status = "Valid"
-        
-        # Reset the renewal stage because the admin has now finished the inspection
+        existing_cert.equipment = request.form.get('type')
+        existing_cert.site = request.form.get('site')
         existing_cert.renewal_status = "Not Started"
-        
-        # Update the owner (in case the equipment moved to a different client)
-        existing_cert.user_id = target_user.id
-        
-        # If a new PDF was uploaded, update the path
-        if filename:
-            existing_cert.pdf_path = filename
-            
-        print(f"Asset {asset_id} has been RENEWED.")
+        if drive_link:
+            existing_cert.pdf_path = drive_link # Save the DRIVE LINK instead of filename
     else:
-        # --- NEW CERTIFICATE LOGIC ---
         new_c = Certificate(
             asset_id=asset_id,
-            form_type=request.form.get('form_type'),
             equipment=request.form.get('type'),
             site=request.form.get('site'),
             inspection_date=request.form.get('date'),
             expiry_date=request.form.get('expiry_date'),
-            status="Valid",
-            renewal_status="Not Started", # Default for new equipment
-            pdf_path=filename if filename else "",
+            pdf_path=drive_link, # Save the DRIVE LINK
             user_id=target_user.id
         )
         db.session.add(new_c)
-        print(f"Asset {asset_id} has been ADDED to {client_username}.")
 
-    # 5. Save changes to SQLite
     db.session.commit()
-
-    # 6. Sync to Google Sheets immediately
     sync_to_google_sheets()
-
     return jsonify({"status": "success"})
 
 

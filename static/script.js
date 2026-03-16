@@ -219,7 +219,7 @@ async function loadInventory() {
                   <img src="/generate_qr/${c.id}" width="100" style="border: 1px solid #eee; padding: 5px;">
               </div>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                  <a href="/static/pdfs/${c.pdf}" target="_blank" class="btn-small" style="text-align:center; text-decoration:none; background: #007bff; color:white; ${!c.pdf ? 'pointer-events: none; opacity: 0.5;' : ''}">View PDF</a>
+                  <a href="${c.pdf}" target="_blank" class="btn-small" style="text-align:center; text-decoration:none; background: #007bff; color:white; ${!c.pdf ? 'pointer-events: none; opacity: 0.5;' : ''}">View PDF</a>
                   <button onclick="deleteCertificate('${c.id}')" class="btn-small" style="background: #dc3545; color:white; border:none;">Delete</button>
               </div>
           </div>`;

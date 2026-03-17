@@ -38,7 +38,9 @@
       <img src="{{ url_for('static', filename='images/rr_logo.jpeg') }}" alt="RR Solutions">
       <h1>RR <span>Solutions</span></h1>
     </div>
-
+    <div class="hamburger" onclick="toggleMenu()" style="color: white; font-size: 24px; cursor: pointer;">
+      ☰
+    </div>
     <nav id="nav-menu">
       <a onclick="showSection('dashboard')">Dashboard</a>
       <a id="admin-add-link" onclick="showSection('add-certificate')" style="color: #28a745; font-weight: bold;">+ Add Inspection</a>

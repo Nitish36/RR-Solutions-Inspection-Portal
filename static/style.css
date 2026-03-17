@@ -68,20 +68,20 @@ body {
 
 /* ================= HEADER ================= */
 header {
-  background: var(--primary);
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  box-shadow: var(--shadow);
+    background: #333;
+    color: white;
+    padding: 1rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
 }
 
+
 .header-container {
-  max-width: 1200px;
-  margin: auto;
-  padding: 14px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 5%;
 }
 
 .brand {
@@ -106,8 +106,8 @@ header h1 span {
 
 /* ================= NAV ================= */
 nav {
-  display: flex;
-  gap: 22px;
+    display: flex;
+    gap: 15px;
 }
 
 nav a {
@@ -116,6 +116,7 @@ nav a {
   font-weight: 500;
   font-size: 0.95rem;
   transition: 0.2s;
+  cursor: pointer;
 }
 
 nav a:hover {
@@ -150,9 +151,10 @@ nav a:hover {
 
 /* ================= MAIN ================= */
 .container {
+  width: 95%;
   max-width: 1200px;
-  margin: 30px auto;
-  padding: 0 20px;
+  margin: 0 auto;
+  padding: 20px 10px;
 }
 
 .hidden {
@@ -169,20 +171,23 @@ nav a:hover {
 }
 
 .grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 20px;
+    display: grid;
+    /* This automatically chooses 1, 2, or 3 columns based on screen size */
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
 }
 
 /* ================= STATS ================= */
 .stat-card {
-  background: white;
-  padding: 22px;
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  border-left: 6px solid var(--secondary);
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    text-align: center;
 }
 
+.stat-card h1 { font-size: 2.5rem; margin: 10px 0; }
 .stat-card.warning { border-left-color: var(--warning); }
 .stat-card.danger { border-left-color: var(--danger); }
 
@@ -252,35 +257,40 @@ footer {
 }
 
 /* ================= MOBILE ================= */
+/* --- MOBILE SPECIFIC FIXES (Phones) --- */
 @media (max-width: 768px) {
-  nav {
-    display: none;
-    position: absolute;
-    top: 64px;
-    left: 0;
-    width: 100%;
-    background: var(--primary);
-    flex-direction: column;
-    padding: 15px 0;
-  }
+    nav {
+        display: none; /* Hide default nav */
+        flex-direction: column;
+        position: absolute;
+        top: 60px;
+        left: 0;
+        width: 100%;
+        background: #333;
+        padding: 20px;
+        box-shadow: 0 10px 10px rgba(0,0,0,0.1);
+    }
 
-  nav.active {
-    display: flex;
-  }
+    nav.active {
+        display: flex; /* Show when hamburger is clicked */
+    }
 
-  nav a {
-    padding: 12px;
-    font-size: 1.1rem;
-  }
+    .hamburger {
+        display: block !important;
+        cursor: pointer;
+        font-size: 1.5rem;
+    }
 
-  .menu-toggle {
-    display: flex;
-  }
-
-  .grid {
-    grid-template-columns: 1fr;
-  }
+    .grid {
+        grid-template-columns: 1fr; /* Force 1 column on small phones */
+    }
+    
+    .card {
+        margin-bottom: 15px;
+    }
 }
+
+.hamburger { display: none; }
 
 #flash-container {
     display: flex;

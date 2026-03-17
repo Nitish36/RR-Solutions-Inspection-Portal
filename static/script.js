@@ -89,6 +89,8 @@ function showSection(id) {
   if (id === "certificates") loadInventory();
   if (id === "renewals") loadRenewals();
   if (id === "profile") showOnePageProfile();
+
+window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 /* =====================================================
@@ -186,6 +188,18 @@ async function loadDashboard() {
   }
 }
 
+function toggleMenu() {
+    const nav = document.getElementById('nav-menu');
+    nav.classList.toggle('active');
+}
+
+// Close menu when a link is clicked
+document.querySelectorAll('nav a').forEach(link => {
+    link.addEventListener('click', () => {
+        document.getElementById('nav-menu').classList.remove('active');
+    });
+});
+
 async function loadInventory() {
   try {
       const res = await fetch("/api/certificates");
@@ -219,7 +233,7 @@ async function loadInventory() {
                   <img src="/generate_qr/${c.id}" width="100" style="border: 1px solid #eee; padding: 5px;">
               </div>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                  <a href="${c.pdf}" target="_blank" class="btn-small" style="text-align:center; text-decoration:none; background: #007bff; color:white; ${!c.pdf ? 'pointer-events: none; opacity: 0.5;' : ''}">View PDF</a>
+                  <a href="${c.pdf_path}" target="_blank" class="btn-small" style="text-align:center; text-decoration:none; background: #007bff; color:white; ${!c.pdf ? 'pointer-events: none; opacity: 0.5;' : ''}">View PDF</a>
                   <button onclick="deleteCertificate('${c.id}')" class="btn-small" style="background: #dc3545; color:white; border:none;">Delete</button>
               </div>
           </div>`;

@@ -27,7 +27,7 @@ app.config['SECRET_KEY'] = 'RR_SOLUTIONS_SECRET_KEY'
 # --- DATABASE CONFIGURATION ---
 # Check if we are on Render (Cloud) or Local
 DATABASE_URL = os.environ.get('DATABASE_URL')
-DRIVE_FOLDER_ID = "https://drive.google.com/drive/folders/107Y_7HUJXMWSBmlLkNrPrJS5Orogvbvz"
+DRIVE_FOLDER_ID = "107Y_7HUJXMWSBmlLkNrPrJS5Orogvbvz"
 
 if DATABASE_URL:
     # Fix for SQLAlchemy: URLs must start with postgresql:// not postgres://

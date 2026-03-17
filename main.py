@@ -301,8 +301,9 @@ def add_cert():
         # Instead of saving locally, we send the stream to Google Drive
         filename = f"{asset_id}.pdf"
         drive_link = upload_pdf_to_drive(file, filename)
+        print(f"DEBUG: Drive Link generated is: {drive_link}")
 
-    # Check if we are updating or creating
+        # Check if we are updating or creating
     existing_cert = Certificate.query.filter_by(asset_id=asset_id).first()
 
     if existing_cert:
